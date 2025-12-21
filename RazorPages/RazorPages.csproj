@@ -14,4 +14,8 @@
     <Content Remove="Pages\sadra.cshtml" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
+  </ItemGroup>
+
 </Project>
