@@ -1,13 +1,31 @@
-﻿@page
+@page
 @model RazorPages.Pages.ProfileForms.IndexModel
 @{
-	ViewData["title"] = "index";
+    ViewData["title"] = "Profile Management";
 }
-<h1>Index</h1>
 
-<p>
-    <a asp-page="CreateForm">Create New</a>
-</p>
+<h1>Profile Management</h1>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Choose Your View</h5>
+            </div>
+            <div class="card-body">
+                <p>
+                    <a asp-page="CreateForm" class="btn btn-primary">Create New Profile</a>
+                </p>
+                <p>
+                    <a asp-page="KendoGrid" class="btn btn-primary">Kendo Grid View</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h3 class="mt-4">Simple Table View</h3>
+
 <table class="table">
     <thead>
         <tr>
@@ -43,9 +61,9 @@
                     @Html.DisplayFor(modelItem => item.job)
                 </td>
                 <td>
-                    <a asp-page="./Edit" asp-route-id="@item.Id">Edit</a> |
+                    @* <a asp-page="./Edit" asp-route-id="@item.Id">Edit</a> |
                     <a asp-page="./Details" asp-route-id="@item.Id">Details</a> |
-                    <a asp-page="./Delete" asp-route-id="@item.Id">Delete</a>
+                    <a asp-page="./Delete" asp-route-id="@item.Id">Delete</a> *@
                 </td>
             </tr>
         }
