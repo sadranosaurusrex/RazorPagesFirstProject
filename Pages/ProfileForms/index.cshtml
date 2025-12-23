@@ -1,0 +1,71 @@
+@page
+@model RazorPages.Pages.ProfileForms.IndexModel
+@{
+    ViewData["title"] = "Profile Management";
+}
+
+<h1>Profile Management</h1>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Choose Your View</h5>
+            </div>
+            <div class="card-body">
+                <p>
+                    <a asp-page="CreateForm" class="btn btn-primary">Create New Profile</a>
+                </p>
+                <p>
+                    <a asp-page="KendoGrid" class="btn btn-primary">Kendo Grid View</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h3 class="mt-4">Simple Table View</h3>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Form[0].firstName)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Form[0].age)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Form[0].lastName)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Form[0].job)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Form)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.firstName)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.age)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.lastName)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.job)
+                </td>
+                <td>
+                    <a asp-page="./Edit" asp-route-id="@item.Id">Edit</a> |
+                    <a asp-page="./Details" asp-route-id="@item.Id">Details</a> |
+                    <a asp-page="./Delete" asp-route-id="@item.Id">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

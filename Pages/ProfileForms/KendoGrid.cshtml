@@ -1,0 +1,124 @@
+@page
+@model RazorPages.Pages.ProfileForms.KendoGridModel
+@{
+    ViewData["Title"] = "Profile Data - Kendo Grid";
+}
+
+<link rel="stylesheet" href="https://unpkg.com/@@progress/kendo-theme-default@latest/dist/all.css" />
+
+<h2>Profile Information</h2>
+
+<div class="row">
+    <div class="col-md-5">
+        <h4>Interactive Kendo Grid hahah :)</h4>
+        <div id="grid"></div>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <a asp-page="CreateForm" class="btn btn-primary">Add New Profile</a>
+                <a asp-page="Index" class="btn btn-secondary">Back to Simple View</a>
+            </div>
+        </div>
+        <h4>Server-Side HTML Table</h4>
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>First Name</th>
+                        <th>Last Name</th>
+                        <th>Age</th>
+                        <th>Job</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var profile in Model.Profiles)
+                    {
+                        <tr>
+                            <td>@profile.Id</td>
+                            <td>@profile.firstName</td>
+                            <td>@profile.lastName</td>
+                            <td>@profile.age</td>
+                            <td>@profile.job</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (!Model.Profiles.Any())
+        {
+            <div class="alert alert-info">
+                No profiles found. <a asp-page="CreateForm">Create one now</a>.
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+    <!-- Use Kendo official CDN to ensure the jQuery-based Kendo UI script registers correctly -->
+    <link rel="stylesheet" href="https://kendo.cdn.telerik.com/2023.3.1210/styles/kendo.default-v2.min.css" />
+    <script src="https://kendo.cdn.telerik.com/2023.3.1210/js/kendo.all.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+
+            $("#grid").kendoGrid({
+                height: 500,
+                sortable: true,
+                filterable: { mode: "row" },
+                pageable: {
+                    refresh: true,
+                    pageSizes: [5, 10, 15, "All"],
+                    buttonCount: 4
+                },
+                dataSource: {
+                    transport: {
+                        read: {
+                            url: "/ProfileForms/KendoGrid?handler=Data",
+                            dataType: "json"
+                        }
+                    },
+                    schema: {
+                        model: {
+                            id: "Id",
+                            fields: {
+                                Id: { type: "number" },
+                                firstName: { type: "string" },
+                                lastName: { type: "string" },
+                                age: { type: "string" },
+                                job: { type: "string" }
+                            }
+                        }
+                    },
+                    pageSize: 10
+                },
+                columns: [
+                    { field: "Id", title: "ID", width: 80, filterable: true },
+                    { field: "firstName", title: "First Name" },
+                    { field: "lastName", title: "Last Name" },
+                    { field: "age", title: "Age", width: 100 },
+                    { field: "job", title: "Job" }
+                ]
+            });
+
+        });
+    </script>
+}
+
+
+<style>
+    .k-grid {
+        margin: 20px 0;
+    }
+    
+    .k-grid-header {
+        background-color: #f8f9fa;
+        font-weight: bold;
+    }
+    
+    .k-grid .k-table td {
+        padding: 12px 8px;
+    }
+</style>
+
