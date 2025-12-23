@@ -7,11 +7,15 @@
 <h2>Profile Information</h2>
 
 <div class="row">
-    <div class="col-md-6">
+    <div class="col-md-5">
         <h4>Interactive Kendo Grid hahah :)</h4>
         <div id="grid"></div>
-    </div>
-    <div class="col-md-6">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <a asp-page="CreateForm" class="btn btn-primary">Add New Profile</a>
+                <a asp-page="Index" class="btn btn-secondary">Back to Simple View</a>
+            </div>
+        </div>
         <h4>Server-Side HTML Table</h4>
         <div class="table-responsive">
             <table class="table table-striped table-hover">
@@ -136,7 +140,3 @@
     }
 </style>
 
-<p>
-    <a asp-page="CreateForm" class="btn btn-primary">Add New Profile</a>
-    <a asp-page="Index" class="btn btn-secondary">Back to Simple View</a>
-</p>
