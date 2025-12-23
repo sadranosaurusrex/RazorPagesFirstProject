@@ -4,6 +4,8 @@
     ViewData["Title"] = "Profile Data - Kendo Grid";
 }
 
+<link rel="stylesheet" href="https://unpkg.com/@@progress/kendo-theme-default@latest/dist/all.css" />
+
 <h2>Profile Information</h2>
 
 <div class="row">
@@ -58,8 +60,6 @@
     <script src="https://unpkg.com/@@progress/kendo-react-data-tools@latest/dist/cdn/js/kendo-react-data-tools.js"></script>
     <script src="https://unpkg.com/@@progress/kendo-react-intl@latest/dist/cdn/js/kendo-react-intl.js"></script>
     <script src="https://unpkg.com/@@progress/kendo-licensing@latest/dist/cdn/js/kendo-licensing.js"></script>
-    
-    <link rel="stylesheet" href="https://unpkg.com/@@progress/kendo-theme-default@latest/dist/all.css" />
 
     <script type="text/babel">
         const { Grid, GridColumn } = KendoReactGrid;
@@ -92,12 +92,13 @@
                 setDataState(event.dataState);
             };
 
-            const processedData = process(data, dataState);
+            const processed = process(data, dataState);
 
             return (
                 <Grid
                     style={{ height: '500px' }}
-                    data={processedData}
+                    data={processed.data}
+                    total={processed.total}
                     {...dataState}
                     onDataStateChange={dataStateChange}
                     sortable={true}
@@ -110,7 +111,7 @@
                         previousNext: true
                     }}
                 >
-                    <GridColumn field="id" title="ID" width="80px" filterable={false} />
+                    <GridColumn field="Id" title="ID" width="80px" filterable={false} />
                     <GridColumn field="firstName" title="First Name" />
                     <GridColumn field="lastName" title="Last Name" />
                     <GridColumn field="age" title="Age" width="100px" />
