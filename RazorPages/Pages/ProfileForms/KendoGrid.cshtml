@@ -4,13 +4,11 @@
     ViewData["Title"] = "Profile Data - Kendo Grid";
 }
 
-<link rel="stylesheet" href="https://unpkg.com/@@progress/kendo-theme-default@latest/dist/all.css" />
-
 <h2>Profile Information</h2>
 
 <div class="row">
-    <div class="col-md-5">
-        <h4>Interactive Kendo Grid hahah :)</h4>
+    <div class="col-md-12">
+        <h4>Interactive Grid (no jQuery)</h4>
         <div id="grid"></div>
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
@@ -18,113 +16,225 @@
                 <a asp-page="Index" class="btn btn-secondary">Back to Simple View</a>
             </div>
         </div>
-        <h4>Server-Side HTML Table</h4>
-        <div class="table-responsive">
-            <table class="table table-striped table-hover">
-                <thead class="table-dark">
-                    <tr>
-                        <th>ID</th>
-                        <th>First Name</th>
-                        <th>Last Name</th>
-                        <th>Age</th>
-                        <th>Job</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var profile in Model.Profiles)
-                    {
-                        <tr>
-                            <td>@profile.Id</td>
-                            <td>@profile.firstName</td>
-                            <td>@profile.lastName</td>
-                            <td>@profile.age</td>
-                            <td>@profile.job</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-        @if (!Model.Profiles.Any())
-        {
-            <div class="alert alert-info">
-                No profiles found. <a asp-page="CreateForm">Create one now</a>.
-            </div>
-        }
     </div>
 </div>
 
 @section Scripts {
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@@progress/kendo-react-grid@latest/dist/cdn/js/kendo-react-grid.js"></script>
-    <script src="https://unpkg.com/@@progress/kendo-react-data-tools@latest/dist/cdn/js/kendo-react-data-tools.js"></script>
-    <script src="https://unpkg.com/@@progress/kendo-react-intl@latest/dist/cdn/js/kendo-react-intl.js"></script>
-    <script src="https://unpkg.com/@@progress/kendo-licensing@latest/dist/cdn/js/kendo-licensing.js"></script>
+    <script>
+        (function () {
+            const pageSizes = [5, 10, 15, "All"];
 
-    <script type="text/babel">
-        const { Grid, GridColumn } = KendoReactGrid;
-        const { process } = KendoReactDataQuery;
-        const { useState, useEffect } = React;
+            function debounce(fn, delay) {
+                let t;
+                return function (...args) {
+                    clearTimeout(t);
+                    t = setTimeout(() => fn.apply(this, args), delay);
+                };
+            }
 
-        const ProfileGrid = () => {
-            const [data, setData] = useState([]);
-            const [dataState, setDataState] = useState({
-                skip: 0,
-                take: 10,
-                sort: []
-            });
+            document.addEventListener('DOMContentLoaded', function () {
+                const container = document.getElementById('grid');
+                if (!container) return;
 
-            useEffect(() => {
-                fetchData();
-            }, []);
+                // single-table grid state
+                let data = [];
+                let filtered = [];
+                let currentPage = 1;
+                let pageSize = 10;
+                let sortField = null;
+                let sortDir = 1; // 1 = asc, -1 = desc
+                const columns = [
+                    { field: 'Id', title: 'ID' },
+                    { field: 'firstName', title: 'First Name' },
+                    { field: 'lastName', title: 'Last Name' },
+                    { field: 'age', title: 'Age' },
+                    { field: 'job', title: 'Job' }
+                ];
 
-            const fetchData = async () => {
-                try {
-                    const response = await fetch('/ProfileForms/KendoGrid?handler=Data');
-                    const profiles = await response.json();
-                    setData(profiles);
-                } catch (error) {
-                    console.error('Error fetching data:', error);
+                // build UI
+                container.innerHTML = '';
+                const toolbar = document.createElement('div');
+                toolbar.className = 'mb-2 d-flex justify-content-between';
+
+                const leftControls = document.createElement('div');
+                const pageSizeSelect = document.createElement('select');
+                pageSizes.forEach(ps => {
+                    const opt = document.createElement('option');
+                    opt.value = ps === 'All' ? '0' : String(ps);
+                    opt.text = String(ps);
+                    pageSizeSelect.appendChild(opt);
+                });
+                pageSizeSelect.value = String(pageSize);
+                pageSizeSelect.addEventListener('change', () => {
+                    pageSize = Number(pageSizeSelect.value) || filtered.length || data.length;
+                    currentPage = 1;
+                    render();
+                });
+                leftControls.appendChild(document.createTextNode('Page size: '));
+                leftControls.appendChild(pageSizeSelect);
+
+                const rightControls = document.createElement('div');
+                const paginationHolder = document.createElement('div');
+                rightControls.appendChild(paginationHolder);
+
+                toolbar.appendChild(leftControls);
+                toolbar.appendChild(rightControls);
+
+                container.appendChild(toolbar);
+
+                const table = document.createElement('table');
+                table.className = 'table table-striped table-hover';
+                const thead = document.createElement('thead');
+                const headerRow = document.createElement('tr');
+                const filterRow = document.createElement('tr');
+
+                columns.forEach(col => {
+                    const th = document.createElement('th');
+                    th.textContent = col.title;
+                    th.style.cursor = 'pointer';
+                    th.addEventListener('click', () => {
+                        if (sortField === col.field) sortDir = -sortDir; else { sortField = col.field; sortDir = 1; }
+                        applySort(); render();
+                    });
+                    headerRow.appendChild(th);
+
+                    const fth = document.createElement('th');
+                    const input = document.createElement('input');
+                    input.className = 'form-control form-control-sm';
+                    input.placeholder = 'Filter...';
+                    input.dataset.field = col.field;
+                    input.addEventListener('input', debounce(onFilterChange, 300));
+                    fth.appendChild(input);
+                    filterRow.appendChild(fth);
+                });
+
+                thead.appendChild(headerRow);
+                thead.appendChild(filterRow);
+                table.appendChild(thead);
+
+                const tbody = document.createElement('tbody');
+                table.appendChild(tbody);
+
+                container.appendChild(table);
+
+                async function fetchData() {
+                    try {
+                        const res = await fetch('/ProfileForms/KendoGrid?handler=Data');
+                        if (!res.ok) throw new Error('Network response was not ok');
+                        data = await res.json();
+                        filtered = data.slice();
+                        if (!Number(pageSizeSelect.value)) pageSize = filtered.length;
+                        render();
+                    } catch (e) {
+                        console.error('Failed to fetch data:', e);
+                        container.innerHTML = '<div class="alert alert-danger">Failed to load grid data</div>';
+                    }
                 }
-            };
 
-            const dataStateChange = (event) => {
-                setDataState(event.dataState);
-            };
+                function onFilterChange() {
+                    const inputs = Array.from(filterRow.querySelectorAll('input'));
+                    const criteria = {};
+                    inputs.forEach(i => {
+                        if (i.value && i.value.trim() !== '') criteria[i.dataset.field] = i.value.trim();
+                    });
+                    applyFilters(criteria);
+                    currentPage = 1;
+                    render();
+                }
 
-            const processed = process(data, dataState);
+                function applyFilters(criteria) {
+                    filtered = data.filter(item => {
+                        for (const key in criteria) {
+                            const val = String((item[key] === null || item[key] === undefined) ? '' : item[key]).toLowerCase();
+                            const crit = String(criteria[key]).toLowerCase();
+                            if (!val.includes(crit)) return false;
+                        }
+                        return true;
+                    });
+                    applySort();
+                }
 
-            return (
-                <Grid
-                    style={{ height: '500px' }}
-                    data={processed.data}
-                    total={processed.total}
-                    {...dataState}
-                    onDataStateChange={dataStateChange}
-                    sortable={true}
-                    filterable={true}
-                    pageable={{
-                        buttonCount: 4,
-                        info: true,
-                        type: 'numeric',
-                        pageSizes: [5, 10, 15, 'All'],
-                        previousNext: true
-                    }}
-                >
-                    <GridColumn field="Id" title="ID" width="80px" filterable={false} />
-                    <GridColumn field="firstName" title="First Name" />
-                    <GridColumn field="lastName" title="Last Name" />
-                    <GridColumn field="age" title="Age" width="100px" />
-                    <GridColumn field="job" title="Job" />
-                </Grid>
-            );
-        };
+                function applySort() {
+                    if (!sortField) return;
+                    filtered.sort((a, b) => {
+                        const av = a[sortField];
+                        const bv = b[sortField];
+                        if (av == null && bv == null) return 0;
+                        if (av == null) return -1 * sortDir;
+                        if (bv == null) return 1 * sortDir;
+                        if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * sortDir;
+                        return String(av).localeCompare(String(bv)) * sortDir;
+                    });
+                }
 
-        ReactDOM.render(<ProfileGrid />, document.getElementById('grid'));
+                function render() {
+                    tbody.innerHTML = '';
+                    const total = filtered.length;
+                    const effectivePageSize = pageSize === 0 ? total : pageSize;
+                    const totalPages = effectivePageSize ? Math.max(1, Math.ceil(total / effectivePageSize)) : 1;
+                    if (currentPage > totalPages) currentPage = totalPages;
+                    const start = (currentPage - 1) * effectivePageSize;
+                    const pageItems = effectivePageSize ? filtered.slice(start, start + effectivePageSize) : filtered.slice();
+
+                    pageItems.forEach(item => {
+                        const tr = document.createElement('tr');
+                        columns.forEach(col => {
+                            const td = document.createElement('td');
+                            td.textContent = item[col.field] ?? '';
+                            tr.appendChild(td);
+                        });
+                        tbody.appendChild(tr);
+                    });
+
+                    renderPagination(paginationHolder, total, effectivePageSize, totalPages);
+                }
+
+                function renderPagination(holder, total, effectivePageSize, totalPages) {
+                    holder.innerHTML = '';
+                    if (totalPages <= 1) return;
+                    const nav = document.createElement('nav');
+                    const ul = document.createElement('ul');
+                    ul.className = 'pagination pagination-sm mb-0';
+
+                    const makePageItem = (p, label) => {
+                        const li = document.createElement('li');
+                        li.className = 'page-item' + (p === currentPage ? ' active' : '');
+                        const a = document.createElement('a');
+                        a.className = 'page-link';
+                        a.href = '#';
+                        a.textContent = label ?? String(p);
+                        a.addEventListener('click', (ev) => { ev.preventDefault(); currentPage = p; render(); });
+                        li.appendChild(a);
+                        return li;
+                    };
+
+                    const prev = document.createElement('li');
+                    prev.className = 'page-item' + (currentPage === 1 ? ' disabled' : '');
+                    const pa = document.createElement('a'); pa.className='page-link'; pa.href='#'; pa.textContent='‹';
+                    pa.addEventListener('click', (ev) => { ev.preventDefault(); if (currentPage>1) { currentPage--; render(); } });
+                    prev.appendChild(pa); ul.appendChild(prev);
+
+                    let startPage = Math.max(1, currentPage - 2);
+                    let endPage = Math.min(totalPages, startPage + 4);
+                    if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
+                    for (let p = startPage; p <= endPage; p++) ul.appendChild(makePageItem(p));
+
+                    const next = document.createElement('li');
+                    next.className = 'page-item' + (currentPage === totalPages ? ' disabled' : '');
+                    const na = document.createElement('a'); na.className='page-link'; na.href='#'; na.textContent='›';
+                    na.addEventListener('click', (ev) => { ev.preventDefault(); if (currentPage<totalPages) { currentPage++; render(); } });
+                    next.appendChild(na); ul.appendChild(next);
+
+                    nav.appendChild(ul);
+                    holder.appendChild(nav);
+                }
+
+                fetchData();
+            });
+        })();
     </script>
-    
-    <script src="https://unpkg.com/@@babel/standalone/babel.min.js"></script>
 }
+
 
 <style>
     .k-grid {
